@@ -1,0 +1,9 @@
+logging:
+  level:
+    root: info
+    com.github.labcabrera: debug
+security:
+  jwt:
+    secret: changeit
+    tags:
+      claims: roles
