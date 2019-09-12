@@ -5,47 +5,47 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.stereotype.Component;
+import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
+import org.springframework.web.server.ServerWebExchange;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
-@Component
 @Slf4j
-public class AuthenticationManager implements ReactiveAuthenticationManager {
-
-	@Value("${security.jwt.secret}")
-	private String secret;
-
-	@Value("${security.jwt.tags.claims}")
-	private String claimsTagName;
+public class JwtServerAuthenticationConverter implements ServerAuthenticationConverter {
 
 	@Override
-	public Mono<Authentication> authenticate(Authentication authentication) {
-		String token = authentication.getCredentials().toString();
-		log.debug("Authenticating token {}", token);
+	public Mono<Authentication> convert(ServerWebExchange swe) {
+		ServerHttpRequest request = swe.getRequest();
+		String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+		if (authHeader != null && authHeader.startsWith("Bearer ")) {
+			String jwt = authHeader.substring(7);
+			//TODO parse/err handling
+			return create(jwt);
+		}
+		else {
+			return Mono.empty();
+		}
+	}
 
+	public static Mono<Authentication> create(String jwt) {
+		String secret = "changeit";
 		Jws<Claims> claims;
 		try {
-			claims = Jwts.parser().setSigningKey(secret).parseClaimsJws(token);
+			claims = Jwts.parser().setSigningKey(secret).parseClaimsJws(jwt);
 		}
-		catch (MalformedJwtException ex) {
-			throw new BadCredentialsException(String.format("Malformed Jwt token: '%s'", token));
-		}
-		catch (SignatureException ex) {
-			throw new BadCredentialsException(ex.getMessage());
+		catch (Exception ex) {
+			log.debug("JWT parse error", ex);
+			return Mono.empty();
 		}
 		String user = claims.getBody().getSubject();
 		if (user == null) {
