@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,6 +24,15 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class JwtServerAuthenticationConverter implements ServerAuthenticationConverter {
 
+	private final byte[] secret;
+
+	public JwtServerAuthenticationConverter(Environment env) {
+		if (!env.containsProperty("security.jwt.secret")) {
+			throw new IllegalArgumentException("Missing required property 'security.jwt.secret'");
+		}
+		secret = env.getProperty("security.jwt.secret").getBytes();
+	}
+
 	@Override
 	public Mono<Authentication> convert(ServerWebExchange swe) {
 		ServerHttpRequest request = swe.getRequest();
@@ -37,8 +47,7 @@ public class JwtServerAuthenticationConverter implements ServerAuthenticationCon
 		}
 	}
 
-	public static Mono<Authentication> create(String jwt) {
-		String secret = "changeit";
+	private Mono<Authentication> create(String jwt) {
 		Jws<Claims> claims;
 		try {
 			claims = Jwts.parser().setSigningKey(secret).parseClaimsJws(jwt);
