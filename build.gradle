@@ -1,10 +1,11 @@
 plugins {
 	id 'java'
+	id 'maven-publish'
 	id 'org.springframework.boot'        version '2.1.8.RELEASE' apply false
 	id 'io.spring.dependency-management' version '1.0.8.RELEASE'
 }
 
-group = 'com.github.labcabrera.reactive.jwt'
+group = 'com.github.labcabrera'
 version = version
 sourceCompatibility = '1.8'
 
@@ -34,4 +35,21 @@ dependencies {
 	testImplementation 'io.projectreactor:reactor-test'
 	testCompile 'org.projectlombok:lombok'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+task sourcesJar(type: Jar) {
+	from sourceSets.main.allJava
+	classifier = 'sources'
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			groupId = group
+			artifactId = project.name
+			version = version
+			from components.java
+			artifact sourcesJar
+		}
+	}
 }
