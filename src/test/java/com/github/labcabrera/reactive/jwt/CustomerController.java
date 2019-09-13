@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ServerWebExchange;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -22,14 +21,14 @@ public class CustomerController {
 	}
 
 	@GetMapping("/{id}")
-	private Mono<Customer> findById(@PathVariable String id, ServerWebExchange exchange) {
+	private Mono<Customer> findById(@PathVariable String id) {
 		log.debug("Finding customer {}", id);
 		return customerRepository.findById(id);
 	}
-	
+
 	@GetMapping("/{id}/private")
 	@PreAuthorize("hasRole('root')")
-	private Mono<Customer> findDetail(@PathVariable String id, ServerWebExchange exchange) {
+	private Mono<Customer> findDetail(@PathVariable String id) {
 		log.debug("Finding customer private data {}", id);
 		return customerRepository.findById(id);
 	}
